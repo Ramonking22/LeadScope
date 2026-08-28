@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeadScope by Dimetech Agency</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">LS</div>
+        <div>
+          <h1>LeadScope</h1>
+          <p>Dimetech Agency</p>
+        </div>
+      </div>
+
+      <div class="plan-card" id="planCard">
+        <span class="status" id="planStatus">Free</span>
+        <h2>Starter Plan</h2>
+        <p>Limited scans and exports. Upgrade for full power.</p>
+        <button class="btn btn-primary" id="upgradeBtn">Upgrade to Pro</button>
+        <small class="trial" id="trialInfo">7-day trial available</small>
+      </div>
+
+      <div class="config-card">
+        <div class="card-header">
+          <h3>Configuration</h3>
+          <button class="link" id="openConfig">Manage</button>
+        </div>
+        <p>Store Supabase and Flutterwave keys for sync and billing.</p>
+      </div>
+
+      <div class="history-panel" id="historyPanel">
+        <div class="panel-header">
+          <h3>Scan History</h3>
+          <button class="link" id="toggleHistory">Hide</button>
+        </div>
+        <div class="history-content" id="historyContent"></div>
+        <button class="link danger" id="clearHistory">Clear history</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2>Bulk Email Extraction</h2>
+          <p>Scan URLs or pasted text to extract emails and domains instantly.</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline" id="googleLoginBtn">Google Login</button>
+          <button class="btn btn-outline" id="copyBtn">Copy Results</button>
+          <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
+          <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
+        </div>
+      </header>
+
+      <div class="toast" id="toast" hidden></div>
+
+      <section class="card">
+        <label for="inputData">Paste URLs (one per line) or text logs</label>
+        <textarea id="inputData" placeholder="https://example.com&#10;https://another-store.com&#10;&#10;Or paste text logs here..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" id="scanBtn">Start Scan</button>
+          <button class="btn btn-outline" id="sampleBtn">Load sample</button>
+          <div class="progress-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <span class="progress-text" id="progressText">Ready</span>
+          <div class="spinner" id="spinner"></div>
+        </div>
+        <div class="note" id="exportNote">
+          Free plan exports are limited. Upgrade to unlock full history exports.
+          <span class="note-highlight">URL scans</span> run through a server proxy so CORS does not block them.
+        </div>
+        <div class="metrics">
+          <div class="metric">
+            <span>Total Emails Found</span>
+            <strong id="emailCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>Unique Domains</span>
+            <strong id="domainCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>Last Scan</span>
+            <strong id="lastScan">--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="search-header">
+          <div>
+            <h3>Search & Filter</h3>
+            <p>Find the store URL associated with any email.</p>
+          </div>
+          <div class="filters">
+            <input type="text" id="searchEmail" placeholder="Search by email" />
+            <input type="date" id="fromDate" />
+            <input type="date" id="toDate" />
+            <button class="btn btn-outline" id="filterBtn">Apply</button>
+          </div>
+        </div>
+        <div class="results" id="results"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="configModal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Admin / Configuration Panel</h3>
+        <button class="link" id="closeConfig">Close</button>
+      </div>
+      <div class="modal-body">
+        <label>Supabase Project URL</label>
+        <input type="text" id="supabaseUrl" placeholder="https://xyzcompany.supabase.co" />
+        <label>Supabase API Key</label>
+        <input type="password" id="supabaseKey" placeholder="Enter anon or service key" />
+        <label>Flutterwave Public Key</label>
+        <input type="text" id="flutterwaveKey" placeholder="FLWPUBK_TEST-xxxxx" />
+        <label>Flutterwave Payment Link</label>
+        <input type="text" id="flutterwaveLink" placeholder="https://pay.flutterwave.com/xxxxx" />
+        <p class="hint">Keys stay in this browser only. Sync runs if Supabase is set. Upgrade opens your Flutterwave link.</p>
+        <button class="btn btn-primary" id="saveConfig">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
