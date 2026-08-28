@@ -188,11 +188,8 @@ els.registerBtn.addEventListener("click", async () => {
         password: els.authPassword.value,
       }),
     });
-    user = data.user;
-    els.authPassword.value = "";
-    setAuthUi();
-    await loadScans();
-    showToast("Account created");
+    window.location.href = "/admin";
+    return;
   } catch (err) {
     showToast(err.message);
   }
@@ -207,11 +204,8 @@ els.loginBtn.addEventListener("click", async () => {
         password: els.authPassword.value,
       }),
     });
-    user = data.user;
-    els.authPassword.value = "";
-    setAuthUi();
-    await loadScans();
-    showToast("Signed in");
+    window.location.href = "/admin";
+    return;
   } catch (err) {
     showToast(err.message);
   }

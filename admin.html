@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeadScope Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">LS</div>
+        <div>
+          <h1>LeadScope</h1>
+          <p>Admin workspace</p>
+        </div>
+      </div>
+
+      <div class="account-card" id="signedOutCard">
+        <h2>Create your account</h2>
+        <p>Sign up to save scans to this workspace. Come back any time at /admin.</p>
+        <label for="authName">Name</label>
+        <input type="text" id="authName" placeholder="Oladimeji" autocomplete="name" />
+        <label for="authEmail">Email</label>
+        <input type="text" id="authEmail" placeholder="you@dimetech.agency" autocomplete="email" />
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" placeholder="At least 8 characters" autocomplete="current-password" />
+        <button class="btn btn-primary" id="registerBtn">Create account</button>
+        <button class="btn btn-outline dark" id="loginBtn">Sign in</button>
+      </div>
+
+      <div class="plan-card" id="planCard" hidden>
+        <span class="status" id="planStatus">Free</span>
+        <h2 id="userName">Signed in</h2>
+        <p id="userEmail"></p>
+        <a class="btn btn-primary" href="/">New scan</a>
+        <button class="btn btn-outline dark" id="logoutBtn">Sign out</button>
+        <small class="trial" id="trialInfo">Your leads stay on this account.</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2>Saved leads</h2>
+          <p>Every scan you run is stored on your account. Filter, copy, or export from here.</p>
+        </div>
+        <div class="topbar-actions" id="signedInActions" hidden>
+          <button class="btn btn-outline" id="copyBtn">Copy emails</button>
+          <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
+          <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
+          <button class="btn btn-outline" id="clearHistory">Clear all</button>
+        </div>
+      </header>
+
+      <div class="toast" id="toast" hidden></div>
+
+      <section class="card" id="gateCard">
+        <p class="empty">Create an account or sign in to see your saved data.</p>
+      </section>
+
+      <section class="card" id="dataCard" hidden>
+        <div class="metrics">
+          <div class="metric">
+            <span>Saved emails</span>
+            <strong id="emailCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>Unique domains</span>
+            <strong id="domainCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>Last scan</span>
+            <strong id="lastScan">--</strong>
+          </div>
+        </div>
+        <div class="filters">
+          <input type="text" id="searchEmail" placeholder="Search by email" />
+          <input type="date" id="fromDate" />
+          <input type="date" id="toDate" />
+          <button class="btn btn-outline" id="filterBtn">Apply</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Domain</th>
+                <th>Source</th>
+                <th>Scanned</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="emptyState" hidden>No saved leads yet. Run a scan from the home page.</p>
+      </section>
+    </main>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -31,14 +31,16 @@
         <input type="password" id="authPassword" placeholder="At least 8 characters" autocomplete="current-password" />
         <button class="btn btn-primary" id="registerBtn">Create account</button>
         <button class="btn btn-outline dark" id="loginBtn">Sign in</button>
-        <small class="trial">Google login is next. Email accounts work now.</small>
+        <a class="btn btn-outline dark" id="googleBtn" href="/api/auth/google">Continue with Google</a>
+        <small class="trial" id="googleHint">Email accounts work now. Google login uses your Google Cloud client.</small>
       </div>
 
       <div class="plan-card" id="planCard" hidden>
         <span class="status" id="planStatus">Free</span>
         <h2 id="userName">Signed in</h2>
         <p id="userEmail"></p>
-        <button class="btn btn-primary" id="upgradeBtn">Upgrade to Pro</button>
+        <a class="btn btn-primary" href="/admin">Open admin</a>
+        <button class="btn btn-outline dark" id="upgradeBtn">Upgrade to Pro</button>
         <button class="btn btn-outline dark" id="logoutBtn">Sign out</button>
         <small class="trial" id="trialInfo">80 saved emails on Free.</small>
       </div>

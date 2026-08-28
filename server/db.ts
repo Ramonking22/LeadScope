@@ -44,6 +44,11 @@ export function ensureSchema(): Promise<void> {
           UNIQUE (user_id, email, source_url)
         );
 
+        CREATE TABLE IF NOT EXISTS oauth_states (
+          state TEXT PRIMARY KEY,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+
         CREATE INDEX IF NOT EXISTS scans_user_scanned_idx ON scans (user_id, scanned_at DESC);
         CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id);
       `);

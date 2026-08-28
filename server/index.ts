@@ -372,6 +372,10 @@ const server = http.createServer(async (req, res) => {
       serveFile(res, path.join(PUBLIC, 'index.html'));
       return;
     }
+    if (req.method === 'GET' && (url.pathname === '/admin' || url.pathname === '/admin/')) {
+      serveFile(res, path.join(PUBLIC, 'admin.html'));
+      return;
+    }
     if (req.method === 'GET') {
       const relative = url.pathname.replace(/^\/leadscope\/?/, '/');
       serveFile(res, path.join(PUBLIC, relative === '/' ? 'index.html' : relative));
