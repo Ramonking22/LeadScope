@@ -20,25 +20,32 @@
         </div>
       </div>
 
-      <div class="plan-card" id="planCard">
-        <span class="status" id="planStatus">Free</span>
-        <h2>Starter Plan</h2>
-        <p>Limited scans and exports. Upgrade for full power.</p>
-        <button class="btn btn-primary" id="upgradeBtn">Upgrade to Pro</button>
-        <small class="trial" id="trialInfo">7-day trial available</small>
+      <div class="account-card" id="signedOutCard">
+        <h2>Your workspace</h2>
+        <p>Create an account so scans persist across devices.</p>
+        <label for="authName">Name</label>
+        <input type="text" id="authName" placeholder="Oladimeji" autocomplete="name" />
+        <label for="authEmail">Email</label>
+        <input type="text" id="authEmail" placeholder="you@dimetech.agency" autocomplete="email" />
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" placeholder="At least 8 characters" autocomplete="current-password" />
+        <button class="btn btn-primary" id="registerBtn">Create account</button>
+        <button class="btn btn-outline dark" id="loginBtn">Sign in</button>
+        <small class="trial">Google login is next. Email accounts work now.</small>
       </div>
 
-      <div class="config-card">
-        <div class="card-header">
-          <h3>Configuration</h3>
-          <button class="link" id="openConfig">Manage</button>
-        </div>
-        <p>Store Supabase and Flutterwave keys for sync and billing.</p>
+      <div class="plan-card" id="planCard" hidden>
+        <span class="status" id="planStatus">Free</span>
+        <h2 id="userName">Signed in</h2>
+        <p id="userEmail"></p>
+        <button class="btn btn-primary" id="upgradeBtn">Upgrade to Pro</button>
+        <button class="btn btn-outline dark" id="logoutBtn">Sign out</button>
+        <small class="trial" id="trialInfo">80 saved emails on Free.</small>
       </div>
 
       <div class="history-panel" id="historyPanel">
         <div class="panel-header">
-          <h3>Scan History</h3>
+          <h3>Recent finds</h3>
           <button class="link" id="toggleHistory">Hide</button>
         </div>
         <div class="history-content" id="historyContent"></div>
@@ -50,10 +57,9 @@
       <header class="topbar">
         <div>
           <h2>Bulk Email Extraction</h2>
-          <p>Scan URLs or pasted text to extract emails and domains instantly.</p>
+          <p>Scan URLs or pasted text. Results save to your LeadScope account.</p>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-outline" id="googleLoginBtn">Google Login</button>
           <button class="btn btn-outline" id="copyBtn">Copy Results</button>
           <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
           <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
@@ -64,7 +70,7 @@
 
       <section class="card">
         <label for="inputData">Paste URLs (one per line) or text logs</label>
-        <textarea id="inputData" placeholder="https://example.com&#10;https://another-store.com&#10;&#10;Or paste text logs here..."></textarea>
+        <textarea id="inputData" placeholder="https://example.com&#10;hello@brand.com, sales@brand.com"></textarea>
         <div class="actions">
           <button class="btn btn-primary" id="scanBtn">Start Scan</button>
           <button class="btn btn-outline" id="sampleBtn">Load sample</button>
@@ -75,8 +81,8 @@
           <div class="spinner" id="spinner"></div>
         </div>
         <div class="note" id="exportNote">
-          Free plan exports are limited. Upgrade to unlock full history exports.
-          <span class="note-highlight">URL scans</span> run through a server proxy so CORS does not block them.
+          Sign in to scan. URL fetches run on the server so CORS cannot block them.
+          Disposable and asset-looking addresses are filtered out.
         </div>
         <div class="metrics">
           <div class="metric">
@@ -110,27 +116,6 @@
         <div class="results" id="results"></div>
       </section>
     </main>
-  </div>
-
-  <div class="modal" id="configModal" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Admin / Configuration Panel</h3>
-        <button class="link" id="closeConfig">Close</button>
-      </div>
-      <div class="modal-body">
-        <label>Supabase Project URL</label>
-        <input type="text" id="supabaseUrl" placeholder="https://xyzcompany.supabase.co" />
-        <label>Supabase API Key</label>
-        <input type="password" id="supabaseKey" placeholder="Enter anon or service key" />
-        <label>Flutterwave Public Key</label>
-        <input type="text" id="flutterwaveKey" placeholder="FLWPUBK_TEST-xxxxx" />
-        <label>Flutterwave Payment Link</label>
-        <input type="text" id="flutterwaveLink" placeholder="https://pay.flutterwave.com/xxxxx" />
-        <p class="hint">Keys stay in this browser only. Sync runs if Supabase is set. Upgrade opens your Flutterwave link.</p>
-        <button class="btn btn-primary" id="saveConfig">Save Configuration</button>
-      </div>
-    </div>
   </div>
 
   <script src="app.js"></script>

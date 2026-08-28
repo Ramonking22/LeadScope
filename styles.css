@@ -8,7 +8,6 @@
   --primary-dark: #1e40af;
   --border: #e2e8f0;
   --success: #16a34a;
-  --warning: #f59e0b;
 }
 
 * {
@@ -64,25 +63,39 @@ body {
   font-size: 0.85rem;
 }
 
-.plan-card {
+.plan-card,
+.account-card {
   background: #111827;
   border-radius: 16px;
   padding: 20px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.plan-card h2 {
+.plan-card h2,
+.account-card h2 {
   margin: 0;
   font-size: 1.1rem;
 }
 
-.plan-card p {
+.plan-card p,
+.account-card p {
   margin: 0;
   color: #cbd5f5;
   font-size: 0.9rem;
+}
+
+.account-card label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.account-card input {
+  background: #0b1120;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.3);
 }
 
 .status {
@@ -96,19 +109,6 @@ body {
 
 .trial {
   color: #cbd5f5;
-}
-
-.config-card {
-  background: #0f172a;
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .history-panel {
@@ -233,14 +233,6 @@ input[type="password"] {
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 0.85rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.note-highlight {
-  color: var(--primary-dark);
-  font-weight: 600;
 }
 
 .progress-wrap {
@@ -367,6 +359,12 @@ input[type="password"] {
   color: var(--text);
 }
 
+.btn-outline.dark {
+  background: transparent;
+  color: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
 .link {
   background: transparent;
   border: none;
@@ -381,12 +379,6 @@ input[type="password"] {
   padding: 0;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin: 4px 0 8px;
-}
-
 .toast {
   background: #0f172a;
   color: #f8fafc;
@@ -398,49 +390,6 @@ input[type="password"] {
 .empty {
   color: var(--muted);
   margin: 0;
-}
-
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.modal.open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 18px;
-  padding: 24px;
-  width: min(560px, 90vw);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header .link {
-  color: var(--primary);
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 @keyframes spin {
