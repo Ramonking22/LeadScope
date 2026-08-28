@@ -123,7 +123,8 @@ const afterAuth = async (nextUser, message) => {
   showToast(message);
 };
 
-els.registerBtn.addEventListener("click", async () => {
+els.signedOutCard.addEventListener("submit", async (event) => {
+  event.preventDefault();
   try {
     const data = await api("/api/register", {
       method: "POST",
@@ -181,8 +182,9 @@ const downloadFile = (content, filename, type) => {
 
 els.copyBtn.addEventListener("click", async () => {
   if (!displayed.length) return showToast("Nothing to copy");
-  await navigator.clipboard.writeText(displayed.map((scan) => scan.email).join("\n"));
-  showToast("Emails copied");
+  const unique = Array.from(new Set(displayed.map((scan) => scan.email)));
+  await navigator.clipboard.writeText(unique.join("\n"));
+  showToast(`Copied ${unique.length} email${unique.length === 1 ? "" : "s"}`);
 });
 
 els.exportCsvBtn.addEventListener("click", () => {
@@ -213,11 +215,27 @@ els.clearHistory.addEventListener("click", async () => {
 });
 
 (async () => {
-  try {
-    const data = await api("/api/me");
-    user = data.user;
-  } catch {
-    user = null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("google") === "pending") {
+    showToast("Google login is not connected yet. Create an email account to save data.");
+    history.replaceState({}, "", "/admin");
+  }
+  if (params.get("error")) {
+    showToast(params.get("error"));
+    history.replaceState({}, "", "/admin");
+  }
+  const loadMe = async () => {
+    try {
+      const data = await api("/api/me");
+      user = data.user;
+    } catch {
+      user = null;
+    }
+  };
+  await loadMe();
+  if (!user) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await loadMe();
   }
   setAuthUi();
   if (user) await loadScans();

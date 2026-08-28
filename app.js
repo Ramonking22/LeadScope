@@ -37,8 +37,7 @@ const els = {
   userEmail: document.getElementById("userEmail"),
 };
 
-const SAMPLE = `Contact hello@dimetech.agency or sales@leadscope.app
-Support: founders@shop-demo.test, billing@shop-demo.test`;
+const SAMPLE = `https://redwolfcoshop.com/`;
 
 let user = null;
 let displayed = [];
@@ -130,7 +129,6 @@ const setAuthUi = () => {
   els.planCard.hidden = !signedIn;
   if (!signedIn) {
     els.planStatus.textContent = "Free";
-    els.exportNote.textContent = "Sign in to scan. URL fetches run on the server so CORS cannot block them.";
     return;
   }
   els.userName.textContent = user.name || "Signed in";
@@ -138,10 +136,6 @@ const setAuthUi = () => {
   els.planStatus.textContent = user.plan === "pro" ? "Pro" : "Free";
   els.upgradeBtn.textContent = user.plan === "pro" ? "Pro active" : "Upgrade to Pro";
   els.trialInfo.textContent = user.plan === "pro" ? "Unlimited saved emails" : "80 saved emails on Free.";
-  els.exportNote.textContent =
-    user.plan === "pro"
-      ? "Pro: unlimited saved emails. Asset-looking and noreply addresses are filtered."
-      : "Free plan stores up to 80 emails. Asset-looking and noreply addresses are filtered.";
 };
 
 const loadScans = async () => {
@@ -178,7 +172,8 @@ const withSpinner = (active) => {
   els.scanBtn.disabled = active;
 };
 
-els.registerBtn.addEventListener("click", async () => {
+els.signedOutCard.addEventListener("submit", async (event) => {
+  event.preventDefault();
   try {
     const data = await api("/api/register", {
       method: "POST",
@@ -254,7 +249,7 @@ els.scanBtn.addEventListener("click", async () => {
 
 els.sampleBtn.addEventListener("click", () => {
   els.inputData.value = SAMPLE;
-  showToast("Sample loaded - hit Start Scan");
+  showToast("Sample store loaded - hit Start Scan");
 });
 
 els.filterBtn.addEventListener("click", () => loadScans().catch((err) => showToast(err.message)));
@@ -291,8 +286,9 @@ els.exportJsonBtn.addEventListener("click", () => {
 
 els.copyBtn.addEventListener("click", async () => {
   if (!displayed.length) return showToast("Nothing to copy");
-  await navigator.clipboard.writeText(displayed.map((scan) => scan.email).join("\n"));
-  showToast("Emails copied");
+  const unique = Array.from(new Set(displayed.map((scan) => scan.email)));
+  await navigator.clipboard.writeText(unique.join("\n"));
+  showToast(`Copied ${unique.length} email${unique.length === 1 ? "" : "s"}`);
 });
 
 els.upgradeBtn.addEventListener("click", async () => {

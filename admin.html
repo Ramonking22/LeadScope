@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LeadScope Admin</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,18 +20,18 @@
         </div>
       </div>
 
-      <div class="account-card" id="signedOutCard">
+      <form class="account-card" id="signedOutCard" method="post" action="/api/register">
         <h2>Create your account</h2>
         <p>Sign up to save scans to this workspace. Come back any time at /admin.</p>
         <label for="authName">Name</label>
-        <input type="text" id="authName" placeholder="Oladimeji" autocomplete="name" />
+        <input type="text" id="authName" name="name" placeholder="Oladimeji" autocomplete="name" />
         <label for="authEmail">Email</label>
-        <input type="text" id="authEmail" placeholder="you@dimetech.agency" autocomplete="email" />
+        <input type="email" id="authEmail" name="email" placeholder="you@dimetech.agency" autocomplete="email" required />
         <label for="authPassword">Password</label>
-        <input type="password" id="authPassword" placeholder="At least 8 characters" autocomplete="current-password" />
-        <button class="btn btn-primary" id="registerBtn">Create account</button>
-        <button class="btn btn-outline dark" id="loginBtn">Sign in</button>
-      </div>
+        <input type="password" id="authPassword" name="password" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8" />
+        <button class="btn btn-primary" type="submit" id="registerBtn">Create account</button>
+        <button class="btn btn-outline dark" type="button" id="loginBtn">Sign in</button>
+      </form>
 
       <div class="plan-card" id="planCard" hidden>
         <span class="status" id="planStatus">Free</span>
@@ -50,7 +50,7 @@
           <p>Every scan you run is stored on your account. Filter, copy, or export from here.</p>
         </div>
         <div class="topbar-actions" id="signedInActions" hidden>
-          <button class="btn btn-outline" id="copyBtn">Copy emails</button>
+          <button class="btn btn-outline" id="copyBtn">Copy all</button>
           <button class="btn btn-outline" id="exportCsvBtn">Export CSV</button>
           <button class="btn btn-outline" id="exportJsonBtn">Export JSON</button>
           <button class="btn btn-outline" id="clearHistory">Clear all</button>
@@ -101,6 +101,6 @@
       </section>
     </main>
   </div>
-  <script src="admin.js"></script>
+  <script src="/admin.js"></script>
 </body>
 </html>

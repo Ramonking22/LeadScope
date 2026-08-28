@@ -16,8 +16,32 @@ const BLOCKED_DOMAINS = new Set([
   'github.com', 'githubusercontent.com',
 ]);
 
+function decodeCfEmail(hex: string): string {
+  const key = Number.parseInt(hex.slice(0, 2), 16);
+  if (Number.isNaN(key)) return '';
+  let out = '';
+  for (let n = 2; n < hex.length; n += 2) {
+    const code = Number.parseInt(hex.slice(n, n + 2), 16);
+    if (Number.isNaN(code)) continue;
+    out += String.fromCharCode(code ^ key);
+  }
+  return out;
+}
+
+function decodeProtectedEmails(text: string): string {
+  return text.replace(/data-cfemail="([0-9a-fA-F]+)"/g, (_match, hex) => {
+    const email = decodeCfEmail(hex);
+    return email ? ` data-cfemail="${hex}">${email}<` : _match;
+  }).replace(/href="\/cdn-cgi\/l\/email-protection#[0-9a-fA-F]+"/g, (match) => {
+    const hex = match.split('#')[1]?.replace(/"$/, '') || '';
+    const email = decodeCfEmail(hex);
+    return email ? `href="mailto:${email}"` : match;
+  });
+}
+
 export function extractEmails(text: string): string[] {
-  const matches = text.match(EMAIL_RE) || [];
+  const decoded = decodeProtectedEmails(text);
+  const matches = decoded.match(EMAIL_RE) || [];
   const unique = new Set<string>();
   for (const raw of matches) {
     const email = raw.toLowerCase().replace(/[.,;:)]+$/, '');
@@ -25,6 +49,21 @@ export function extractEmails(text: string): string[] {
     unique.add(email);
   }
   return Array.from(unique);
+}
+
+export function toPrivacyPolicyUrl(raw: string): string | null {
+  let value = raw.trim();
+  if (!/^https?:\/\//i.test(value) && /^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(value)) {
+    value = `https://${value}`;
+  }
+  const url = isSafeFetchUrl(value);
+  if (!url) return null;
+  const path = url.pathname.replace(/\/+$/, '') || '/';
+  if (/\/policies\/privacy-policy$/i.test(path)) return url.toString();
+  url.pathname = '/policies/privacy-policy';
+  url.search = '';
+  url.hash = '';
+  return url.toString();
 }
 
 function isUsefulEmail(email: string): boolean {

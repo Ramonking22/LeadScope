@@ -15,10 +15,8 @@
   font-family: "Inter", sans-serif;
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
+[hidden] {
+  display: none !important;
 }
 
 .app {

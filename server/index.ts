@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { pool, ensureSchema } from './db.ts';
-import { extractEmails, isHttpUrl, parseSources, isSafeFetchUrl, fetchPage } from './extract.ts';
+import { extractEmails, isHttpUrl, parseSources, isSafeFetchUrl, fetchPage, toPrivacyPolicyUrl } from './extract.ts';
 
 const PORT = Number(process.env.WEBSERVER_PORT ?? 3001);
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -29,12 +29,16 @@ type User = {
   plan: string;
 };
 
-function send(res: http.ServerResponse, status: number, body: string | Buffer, contentType: string, extra: Record<string, string> = {}) {
+function send(res: http.ServerResponse, status: number, body: string | Buffer, contentType: string, extra: Record<string, string> = {}, method = 'GET') {
   res.writeHead(status, {
     'content-type': contentType,
     'cache-control': 'no-store',
     ...extra,
   });
+  if (method === 'HEAD') {
+    res.end();
+    return;
+  }
   res.end(body);
 }
 
@@ -42,19 +46,20 @@ function json(res: http.ServerResponse, status: number, payload: unknown, extra?
   send(res, status, JSON.stringify(payload), 'application/json; charset=utf-8', extra);
 }
 
-function serveFile(res: http.ServerResponse, filePath: string) {
-  const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(path.resolve(PUBLIC))) {
-    send(res, 403, 'Forbidden', 'text/plain');
+function serveFile(res: http.ServerResponse, filePath: string, method = 'GET') {
+  const publicRoot = path.resolve(PUBLIC);
+  const resolved = path.resolve(publicRoot, path.normalize(filePath).replace(/^(\.\.(\/|$))+/, ''));
+  if (resolved !== publicRoot && !resolved.startsWith(publicRoot + path.sep)) {
+    send(res, 403, 'Forbidden', 'text/plain', {}, method);
     return;
   }
   fs.readFile(resolved, (err, data) => {
     if (err) {
-      send(res, 404, 'Not found', 'text/plain');
+      send(res, 404, 'Not found', 'text/plain', {}, method);
       return;
     }
     const ext = path.extname(resolved).toLowerCase();
-    send(res, 200, data, MIME[ext] ?? 'application/octet-stream');
+    send(res, 200, data, MIME[ext] ?? 'application/octet-stream', {}, method);
   });
 }
 
@@ -106,6 +111,10 @@ function sessionCookie(token: string): string {
   return `ls_session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`;
 }
 
+function isFormRequest(req: http.IncomingMessage): boolean {
+  return String(req.headers['content-type'] || '').includes('application/x-www-form-urlencoded');
+}
+
 async function createSession(userId: string): Promise<string> {
   const token = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + SESSION_TTL_MS);
@@ -134,18 +143,80 @@ function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
+async function readJson(req: http.IncomingMessage, limit = 200_000): Promise<Record<string, unknown>> {
+  const raw = await readBody(req, limit);
+  if (!raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : {};
+  } catch {
+    throw Object.assign(new Error('Invalid JSON'), { status: 400 });
+  }
+}
+
+async function readAuthBody(req: http.IncomingMessage): Promise<{ email?: string; password?: string; name?: string; intent?: string }> {
+  const raw = await readBody(req);
+  const type = String(req.headers['content-type'] || '');
+  if (type.includes('application/x-www-form-urlencoded')) {
+    const params = new URLSearchParams(raw);
+    return {
+      email: params.get('email') || '',
+      password: params.get('password') || '',
+      name: params.get('name') || '',
+      intent: params.get('intent') || 'register',
+    };
+  }
+  if (!raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return parsed && typeof parsed === 'object'
+      ? parsed as { email?: string; password?: string; name?: string; intent?: string }
+      : {};
+  } catch {
+    throw Object.assign(new Error('Invalid JSON'), { status: 400 });
+  }
+}
+
+function finishAuth(req: http.IncomingMessage, res: http.ServerResponse, status: number, payload: Record<string, unknown>, token?: string) {
+  if (isFormRequest(req)) {
+    const location = token
+      ? '/admin'
+      : `/admin?error=${encodeURIComponent(String(payload.error || 'Could not create account'))}`;
+    send(res, 303, '', 'text/plain', token ? { location, 'set-cookie': sessionCookie(token) } : { location });
+    return;
+  }
+  json(res, status, payload, token ? { 'set-cookie': sessionCookie(token) } : undefined);
+}
+
+async function completeLogin(req: http.IncomingMessage, res: http.ServerResponse, body: { email?: string; password?: string }) {
+  const email = normalizeEmail(body.email || '');
+  const password = String(body.password || '');
+  const { rows } = await pool.query('SELECT id, email, name, plan, password_hash FROM users WHERE email = $1', [email]);
+  const user = rows[0];
+  if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
+    finishAuth(req, res, 401, { error: 'Invalid email or password' });
+    return;
+  }
+  const token = await createSession(user.id);
+  finishAuth(req, res, 200, { user: publicUser(user) }, token);
+}
+
 async function handleRegister(req: http.IncomingMessage, res: http.ServerResponse) {
-  const body = JSON.parse(await readBody(req)) as { email?: string; password?: string; name?: string };
+  const body = await readAuthBody(req);
+  if (body.intent === 'login') {
+    await completeLogin(req, res, body);
+    return;
+  }
   const email = normalizeEmail(body.email || '');
   const password = String(body.password || '');
   const name = String(body.name || '').trim() || email.split('@')[0];
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8) {
-    json(res, 400, { error: 'Use a valid email and a password of at least 8 characters' });
+    finishAuth(req, res, 400, { error: 'Use a valid email and a password of at least 8 characters' });
     return;
   }
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
   if (existing.rowCount) {
-    json(res, 409, { error: 'An account with that email already exists' });
+    finishAuth(req, res, 409, { error: 'An account with that email already exists' });
     return;
   }
   const { rows } = await pool.query(
@@ -153,21 +224,12 @@ async function handleRegister(req: http.IncomingMessage, res: http.ServerRespons
     [email, name, hashPassword(password)],
   );
   const token = await createSession(rows[0].id);
-  json(res, 201, { user: publicUser(rows[0]) }, { 'set-cookie': sessionCookie(token) });
+  finishAuth(req, res, 201, { user: publicUser(rows[0]) }, token);
 }
 
 async function handleLogin(req: http.IncomingMessage, res: http.ServerResponse) {
-  const body = JSON.parse(await readBody(req)) as { email?: string; password?: string };
-  const email = normalizeEmail(body.email || '');
-  const password = String(body.password || '');
-  const { rows } = await pool.query('SELECT id, email, name, plan, password_hash FROM users WHERE email = $1', [email]);
-  const user = rows[0];
-  if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
-    json(res, 401, { error: 'Invalid email or password' });
-    return;
-  }
-  const token = await createSession(user.id);
-  json(res, 200, { user: publicUser(user) }, { 'set-cookie': sessionCookie(token) });
+  const body = await readAuthBody(req);
+  await completeLogin(req, res, body);
 }
 
 async function handleLogout(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -191,7 +253,7 @@ async function handleScan(req: http.IncomingMessage, res: http.ServerResponse) {
     json(res, 401, { error: 'Sign in to scan' });
     return;
   }
-  const body = JSON.parse(await readBody(req, 400_000)) as { input?: string };
+  const body = await readJson(req, 400_000) as { input?: string };
   const sources = parseSources(String(body.input || '')).slice(0, 25);
   if (!sources.length) {
     json(res, 400, { error: 'Paste URLs or text first' });
@@ -209,19 +271,23 @@ async function handleScan(req: http.IncomingMessage, res: http.ServerResponse) {
   const errors: string[] = [];
 
   for (const source of sources) {
-    if (isHttpUrl(source)) {
-      const url = isSafeFetchUrl(source);
+    const looksLikeStore = isHttpUrl(source) || /^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(source);
+    if (looksLikeStore) {
+      const privacy = toPrivacyPolicyUrl(source);
+      const url = privacy ? isSafeFetchUrl(privacy) : null;
       if (!url) {
         errors.push(`Blocked URL: ${source}`);
         continue;
       }
       try {
         const text = await fetchPage(url);
-        for (const email of extractEmails(text)) {
-          found.push({ email, domain: email.split('@')[1], sourceUrl: source });
+        const emails = extractEmails(text);
+        if (!emails.length) errors.push(`No email found on ${url.toString()}`);
+        for (const email of emails) {
+          found.push({ email, domain: email.split('@')[1], sourceUrl: url.toString() });
         }
       } catch {
-        errors.push(`Could not fetch ${source}`);
+        errors.push(`Could not fetch ${url.toString()}`);
       }
     } else {
       for (const email of extractEmails(source)) {
@@ -324,22 +390,50 @@ async function handleUpgrade(req: http.IncomingMessage, res: http.ServerResponse
   json(res, 200, { user: publicUser(rows[0]) });
 }
 
+function pagePath(pathname: string): string | null {
+  let clean = pathname.replace(/\/+$/, '') || '/';
+  const lower = clean.toLowerCase();
+  if (clean === '/' || lower === '/leadscope') return 'index.html';
+  if (lower === '/admin') return 'admin.html';
+  if (lower.startsWith('/leadscope/')) clean = clean.slice('/leadscope'.length);
+  else if (lower.startsWith('/admin/')) clean = clean.slice(clean.toLowerCase().indexOf('/admin') + '/admin'.length);
+  const file = clean.replace(/^\//, '');
+  if (!file || file.includes('..') || file.includes('\0')) return null;
+  return file;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://127.0.0.1:${PORT}`);
+  const method = req.method || 'GET';
 
   try {
-    if (req.method === 'GET' && url.pathname === '/health') {
-      send(res, 200, 'ok', 'text/plain');
+    if ((method === 'GET' || method === 'HEAD') && url.pathname === '/health') {
+      send(res, 200, 'ok', 'text/plain', {}, method);
+      return;
+    }
+    if ((method === 'GET' || method === 'HEAD') && url.pathname === '/favicon.ico') {
+      send(res, 204, '', 'image/x-icon', {}, method);
       return;
     }
 
     await ensureSchema();
 
-    if (req.method === 'POST' && url.pathname === '/api/register') {
+    if (method === 'OPTIONS') {
+      send(res, 204, '', 'text/plain', {
+        'access-control-allow-origin': req.headers.origin || '*',
+        'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
+        'access-control-allow-headers': 'content-type',
+        'access-control-allow-credentials': 'true',
+      }, method);
+      return;
+    }
+
+    const pathLower = url.pathname.toLowerCase();
+    if (method === 'POST' && (pathLower === '/api/register' || pathLower === '/' || pathLower === '/admin' || pathLower === '/admin/')) {
       await handleRegister(req, res);
       return;
     }
-    if (req.method === 'POST' && url.pathname === '/api/login') {
+    if (method === 'POST' && pathLower === '/api/login') {
       await handleLogin(req, res);
       return;
     }
@@ -368,24 +462,25 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/leadscope' || url.pathname === '/leadscope/')) {
-      serveFile(res, path.join(PUBLIC, 'index.html'));
+    if ((method === 'GET' || method === 'HEAD') && url.pathname.startsWith('/api/')) {
+      json(res, 404, { error: 'Not found' });
       return;
     }
-    if (req.method === 'GET' && (url.pathname === '/admin' || url.pathname === '/admin/')) {
-      serveFile(res, path.join(PUBLIC, 'admin.html'));
-      return;
-    }
-    if (req.method === 'GET') {
-      const relative = url.pathname.replace(/^\/leadscope\/?/, '/');
-      serveFile(res, path.join(PUBLIC, relative === '/' ? 'index.html' : relative));
-      return;
+    if (method === 'GET' || method === 'HEAD') {
+      const file = pagePath(url.pathname);
+      if (file) {
+        serveFile(res, path.join(PUBLIC, file), method);
+        return;
+      }
     }
 
-    send(res, 404, 'Not found', 'text/plain');
+    send(res, 404, 'Not found', 'text/plain', {}, method);
   } catch (err) {
     console.error(err);
-    if (!res.headersSent) json(res, 500, { error: 'Something went wrong' });
+    if (!res.headersSent) {
+      const status = typeof err === 'object' && err && 'status' in err ? Number((err as { status: number }).status) : 500;
+      json(res, status, { error: status === 400 ? 'Invalid request' : 'Something went wrong' });
+    }
   }
 });
 
